@@ -1,0 +1,17 @@
+test/
+playground/
+.eslintrc.json
+tsconfig.json
+raycast-env.d.ts
+ARCHITECTURE.md
+ENGINE.md
+REPORT.html
+.env
+.env.local
+.DS_Store
+*.log
+.vscode/
+tsconfig.tsbuildinfo
+node_modules/
+.git/
+bun.lock
