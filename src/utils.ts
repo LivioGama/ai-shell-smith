@@ -1,8 +1,11 @@
 import { LocalStorage } from "@raycast/api";
 import { runAppleScript } from "run-applescript";
-import { execSync, execFileSync } from "child_process";
+import { exec, execFileSync, spawn } from "child_process";
 import { existsSync } from "fs";
+import { promisify } from "node:util";
 import type { KnownPrompts } from "./types";
+
+const execAsync = promisify(exec);
 
 type TerminalApp =
   | "Warp"
@@ -132,6 +135,26 @@ async function runInWezTerm(command: string): Promise<void> {
   `);
 }
 
+async function runInAlacritty(command: string): Promise<void> {
+  const bin = "/Applications/Alacritty.app/Contents/MacOS/alacritty";
+  if (!existsSync(bin)) return runInTerminal(command);
+  const child = spawn(bin, ["-e", "sh", "-c", command], {
+    stdio: "ignore",
+    detached: true,
+  });
+  child.unref();
+}
+
+async function runInKitty(command: string): Promise<void> {
+  const bin = "/Applications/Kitty.app/Contents/MacOS/kitty";
+  if (!existsSync(bin)) return runInTerminal(command);
+  const child = spawn(bin, ["-e", "sh", "-c", command], {
+    stdio: "ignore",
+    detached: true,
+  });
+  child.unref();
+}
+
 async function runInCmux(command: string): Promise<void> {
   // If cmux session exists, send command to it
   // Otherwise, execute in new cmux environment
@@ -182,6 +205,10 @@ export async function runCommandInDefaultTerminal(
       return runInGhostty(command);
     case "WezTerm":
       return runInWezTerm(command);
+    case "Alacritty":
+      return runInAlacritty(command);
+    case "Kitty":
+      return runInKitty(command);
     case "cmux":
       return runInCmux(command);
     case "Terminal":
@@ -191,13 +218,15 @@ export async function runCommandInDefaultTerminal(
   }
 }
 
-export function executeAndCaptureOutput(command: string): string {
+/** Runs the shell command without blocking the Raycast / Node event loop. */
+export async function executeAndCaptureOutput(command: string): Promise<string> {
   try {
-    const output = execSync(command, {
-      encoding: "utf-8",
+    const { stdout } = await execAsync(command, {
+      encoding: "utf8",
       maxBuffer: 10 * 1024 * 1024,
-    }) as string;
-    return output.trim();
+      timeout: 120_000,
+    });
+    return String(stdout).trim();
   } catch (error) {
     if (error instanceof Error) {
       return `Error: ${error.message}`;

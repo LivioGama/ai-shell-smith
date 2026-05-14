@@ -384,7 +384,7 @@ export default function Command(props: { arguments: ShellBuddyArguments }) {
                       title: "Executing command...",
                     });
                     try {
-                      const output = executeAndCaptureOutput(p.command);
+                      const output = await executeAndCaptureOutput(p.command);
                       await Clipboard.copy(output);
                       toast.style = Toast.Style.Success;
                       toast.title = "Output Copied";
